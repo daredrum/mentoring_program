@@ -1,0 +1,73 @@
+body {
+	font: 20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+.h1 {
+	margin: 10px;
+	text-align: center;
+	font-size: 36px;
+	color: #666;
+}
+
+.ui-prettylist-container,
+.ui-prettysortlist-container {
+	margin: 20px auto;
+	padding: 25px;
+	max-width: 900px;
+	min-width: 600px;
+	min-height: 100px;
+	background-color: aquamarine;
+	transition: all 0.5s;
+}
+.ui-prettylist-items {
+	list-style: none;
+	opacity: 1;
+	transition: all 0.5s;
+}
+.ui-prettylist-items.hide {
+	opacity: 0;
+}
+.ui-prettylist-item {
+	margin-bottom: 20px;
+	padding: 10px 20px;
+	border: 2px solid #999;
+	border-radius: 3px;
+	background: #eeeeee;
+}
+.ui-prettylist-pagination {
+	list-style: none;
+}
+
+.ui-prettylist-pagination-item {
+	display: inline-block;
+	margin-right: 20px;
+	padding: 10px 20px;
+	border: 2px solid #999;
+	border-radius: 10px;
+	background: #aaaaaa;
+	cursor: pointer;
+}
+.ui-prettylist-pagination-item.active {
+	background: #555555;
+	color: #eeeeee;
+}
+.ui-prettylist-sort {
+	margin-left: 40px;
+}
+.ui-prettylist-sort-item {
+	display: inline-block;
+	margin-right: 20px;
+	padding: 10px 20px;
+	border: 2px solid #999;
+	border-radius: 10px;
+	background: #333333;
+	color: #eeeeee;
+	cursor: pointer;
+}
+.ui-prettylist-sort-item.up:before {
+	content: '↑';
+	margin-right: 15px;
+}
+.ui-prettylist-sort-item.down:before {
+	content: '↓';
+	margin-right: 15px;
+}
