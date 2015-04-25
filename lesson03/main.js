@@ -10,11 +10,11 @@ var Mediator = {
 		}
 	},
 
-	on: function(event, fn) {
+	on: function(event, fn, context) {
 		var events = this.events;
 		if (typeof event === 'string') {
 			if (!events[event]) events[event] = [];
-			events[event].push(fn);
+			events[event].push(fn.bind(context));
 		}
 	}
 }
@@ -33,7 +33,7 @@ Control.prototype = {
 	init: function() {
 		document.querySelector('.js-play').onclick = this.onPlay.bind(this);
 		document.querySelector('.js-reset').onclick = this.onReset.bind(this);
-		Mediator.on('stop', this.stop);
+		Mediator.on('stop', this.stop, this);
 	},
 
 	onPlay: function() {
@@ -49,6 +49,7 @@ Control.prototype = {
 	onReset: function() {
 		Mediator.trigger('clear');
 		this.disabled = false;
+		this.first = true;
 	},
 
 	stop: function() {
@@ -68,8 +69,8 @@ Counter.prototype = {
 	constructor: Counter,
 
 	init: function() {
-		Mediator.on('increase', this.increase);
-		Mediator.on('clear', this.clear);
+		Mediator.on('increase', this.increase, this);
+		Mediator.on('clear', this.clear, this);
 	},
 
 	increase: function() {
@@ -87,7 +88,8 @@ new Counter;
 
 
 // Timer
-var Timer = function() {
+var Timer = function(options) {
+	this.durations = options.duration || 60;
 	this.init();
 };
 
@@ -95,7 +97,9 @@ Timer.prototype = {
 	constructor: Timer,
 
 	init: function() {
-		Mediator.on('start', this.start);
+		Mediator.on('start', this.start, this);
+		Mediator.on('clear', this.reset, this);
+		this.reset();
 	},
 
 	start: function() {
@@ -123,7 +127,13 @@ Timer.prototype = {
 		} else {
 			self.stop();
 		}
+	},
+
+	reset: function() {
+		document.querySelector('.js-timer').innerHTML = this.durations;
 	}
 }
 
-new Timer;
+new Timer({
+	duration: 10
+});
