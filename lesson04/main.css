@@ -10,3 +10,22 @@ body {
 :focus {
 	outline: none;
 }
+.ui-container {
+	margin: 20px auto;
+	padding: 25px;
+	max-width: 900px;
+	min-width: 600px;
+	min-height: 100px;
+	background-color: #eee;
+}
+.ui-form {
+	text-align: center;
+}
+.ui-select {
+	width: 200px;
+	height: 30px;
+}
+.ui-city-weather {
+	margin-top: 30px;
+	text-align: center;
+}

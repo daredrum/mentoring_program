@@ -6,8 +6,20 @@
     <link rel="stylesheet" href="main.css"/>
 </head>
 <body>
-<h1 class="h1">Result cash</h1>
+<h1 class="h1">Weather (Result cash)</h1>
 
+<div class="ui-container">
+    <form class="ui-form js-form" action="http://api.openweathermap.org/data/2.5/weather">
+        <select name="q" class="ui-select js-city-select">
+            <option value="London">London</option>
+            <option value="Moscow">Moscow</option>
+            <option value="Paris">Paris</option>
+            <option value="Minsk">Minsk</option>
+            <option value="Oslo">Oslo</option>
+        </select>
+    </form>
+    <div class="ui-city-weather js-city-weather"></div>
+</div>
 
 <script src="main.js"></script>
 
