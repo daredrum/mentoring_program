@@ -1,0 +1,12 @@
+body {
+	font: 20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+.h1 {
+	margin: 10px;
+	text-align: center;
+	font-size: 36px;
+	color: #666;
+}
+:focus {
+	outline: none;
+}
