@@ -50,10 +50,13 @@ function extendClass(Child, Parent) {
 var PrettyList = function(options) {
 	var selectorContainer = options.selectorContainer || '.ui-prettylist-container';
 
+	this.isSort = options.isSort || false;
 	this.containerElem = document.querySelector(selectorContainer);
 	this.perPage = (+options.perPage !== NaN && +options.perPage) || 10;
-	this.currentPage = 0;
+	this.page = 0;
+	this.direction = 'up';
 	this.collection = (options.items instanceof Array && options.items) || [];
+	this.decoratorList = [];
 
 	this.init();
 };
@@ -61,65 +64,62 @@ var PrettyList = function(options) {
 PrettyList.prototype = {
 	constructor : PrettyList,
 
+	decorators : {
+		sorting : {
+			filter : function(list, context) {
+				var arr = (context.direction === 'up') ? list.sort() : list.sort().reverse();
+				return arr;
+			}
+		},
+		pagination : {
+			filter : function(list, context) {
+				var start = context.page * context.perPage,
+					end = start + context.perPage;
+				return list.slice(start, end);
+			}
+		}
+	},
+
 	init : function() {
 		this.listElem = document.createElement('ul');
 		this.listElem.className = 'ui-prettylist-items'
 		this.containerElem.appendChild(this.listElem);
-		this.showList(0);
-	},
 
-	initPagination : function(page) {
-		if (this.containerElem.querySelector('.ui-prettylist-pagination') === null) {
-			this.createPagination();
-		}
-		var paginationElem = this.containerElem.querySelector('.ui-prettylist-pagination');
-		var	paginationActiveElem = paginationElem.querySelector('.ui-prettylist-pagination-item.active');
-		var	paginationCurrentElem = paginationElem.querySelectorAll('.ui-prettylist-pagination-item')[page];
-		this.removeClass(paginationActiveElem, 'active');
-		this.addClass(paginationCurrentElem, 'active');
-	},
+		this.checkPagination();
+		if (this.isSort) this.initSortPanel();
 
-	createPagination : function() {
-		var	paginationListElem = document.createElement('ul');
-		paginationListElem.className = 'ui-prettylist-pagination';
-
-		var amountPages = Math.ceil(this.collection.length / this.perPage);
-		for (var i=1; i<=amountPages; i++) {
-			var	paginationItemElem = document.createElement('li');
-			paginationItemElem.className = 'ui-prettylist-pagination-item';
-			paginationItemElem.innerHTML = i;
-			paginationListElem.appendChild(paginationItemElem);
-		}
-		this.containerElem.appendChild(paginationListElem);
-
-		paginationListElem.addEventListener('click', this.onClick.bind(this), false);
-	},
-
-	showList : function(page) {
-		page = (+page !== NaN && +page) || 0;
-		var self = this,
-			collection = this._getCollection(page);
-		this.clearList(function() {
-			collection.forEach(self.appendToDOM.bind(self));
-			self.initPagination(page);
-		}, 500);
+		this.filter();
 	},
 
 	add : function(name) {
 		if (name) this.collection.push(name);
+		this.checkPagination(true);
 	},
 
-	appendToDOM : function(name) {
-		var itemElem = document.createElement('li');
-		itemElem.className = 'ui-prettylist-item';
-		itemElem.innerHTML = name;
-		this.listElem.appendChild(itemElem);
+	filter : function() {
+		var length = this.decoratorList.length,
+			list = this.collection,
+			name;
+
+		for (var i=0; i<length; i++) {
+			name = this.decoratorList[i];
+			list = this.decorators[name].filter(list, this);
+		}
+		this.showList(list);
 	},
 
-	onClick : function(e) {
-		var elem = e.target;
-		var page = +elem.innerHTML;
-		this.showList(page - 1);
+	showList : function(list) {
+		var self = this;
+		self.clearList(function() {
+			var fragment = document.createDocumentFragment();
+			list.forEach(function(name) {
+				var itemElem = document.createElement('li');
+				itemElem.className = 'ui-prettylist-item';
+				itemElem.innerHTML = name;
+				fragment.appendChild(itemElem);
+			});
+			self.listElem.appendChild(fragment);
+		}, 500);
 	},
 
 	clearList : function(fn, delay) {
@@ -132,29 +132,61 @@ PrettyList.prototype = {
 		}, delay);
 	},
 
-	_getCollection : function(page) {
-		var start = page * this.perPage,
-			end = start + this.perPage;
-		return this.collection.slice(start, end);
-	}
-};
 
-extend(PrettyList, Mixin);
+	// Pagination
 
-
-var PrettySortList = function() {
-	PrettyList.apply(this, arguments);
-};
-
-extendClass(PrettySortList, PrettyList);
-
-extend(PrettySortList, {
-	init : function() {
-		this.superclass.init.apply(this, arguments);
-		this.showSortPanel();
+	checkPagination : function(refresh) {
+		if (this.collection.length > this.perPage) {
+			this.initPagination(0, refresh);
+			if (this.decoratorList.indexOf('pagination') === -1) this.decoratorList.push('pagination');
+		}
 	},
 
-	showSortPanel : function() {
+	initPagination : function(page, refresh) {
+		if (this.containerElem.querySelector('.ui-prettylist-pagination') === null || refresh) {
+			this.createPagination();
+		}
+		var paginationElem = this.containerElem.querySelector('.ui-prettylist-pagination');
+		var	paginationActiveElem = paginationElem.querySelector('.ui-prettylist-pagination-item.active');
+		var	paginationCurrentElem = paginationElem.querySelectorAll('.ui-prettylist-pagination-item')[page];
+		this.removeClass(paginationActiveElem, 'active');
+		this.addClass(paginationCurrentElem, 'active');
+	},
+
+	createPagination : function() {
+		var paginationListElem = this.containerElem.querySelector('.ui-prettylist-pagination');
+		if (!paginationListElem) {
+			paginationListElem = document.createElement('ul');
+			paginationListElem.className = 'ui-prettylist-pagination';
+			this.containerElem.appendChild(paginationListElem);
+		}
+
+		var amountPages = Math.ceil(this.collection.length / this.perPage),
+			fragment = document.createDocumentFragment();
+		for (var i=1; i<=amountPages; i++) {
+			var	paginationItemElem = document.createElement('li');
+			paginationItemElem.className = 'ui-prettylist-pagination-item';
+			paginationItemElem.innerHTML = i;
+			fragment.appendChild(paginationItemElem);
+		}
+		paginationListElem.innerHTML = '';
+		paginationListElem.appendChild(fragment);
+
+		paginationListElem.addEventListener('click', this.onClickPagination.bind(this), false);
+	},
+
+	onClickPagination : function(e) {
+		var elem = e.target,
+			page = elem.innerHTML - 1;
+		this.page = page;
+		this.initPagination(page);
+		this.filter();
+	},
+
+
+	// Sort
+
+	initSortPanel : function() {
 		if (this.containerElem.querySelector('.ui-prettylist-sort') === null) {
 			this.createSortPanel();
 		};
@@ -177,38 +209,37 @@ extend(PrettySortList, {
 		var elem = e.target;
 		if (this.hasClass(elem, 'up')) {
 			this.changeClass(elem, 'up', 'down');
-			this.collection = this.collection.reverse();
+			this.direction = 'down';
 		} else if (this.hasClass(elem, 'down')) {
 			this.changeClass(elem, 'down', 'up');
-			this.collection = this.collection.sort();
+			this.direction = 'up';
 		} else {
 			this.addClass(elem, 'up');
-			this.collection = this.collection.sort();
+			this.direction = 'up';
 		}
-		this.showList(this.currentPage);
-	},
-
-	sortUp : function(a, b) {
-		return a - b;
-	},
-
-	sortDown : function(a, b) {
-		return b - a;
+		if (!this.decoratorList['sorting']) this.decoratorList.unshift('sorting');
+		this.page = 0;
+		this.filter(0);
 	}
-});
+};
 
+
+
+extend(PrettyList, Mixin);
 
 
 
 var prettyList = new PrettyList({
-	items : ['Mike1', 'John2', 'Piter3', 'Mike4', 'John5', 'Piter6', 'Mike7', 'John8', 'Piter9', 'Mike10', 'John11', 'Piter12']
+	items : ['Mike1', 'John2', 'Piter3', 'Mike4', 'John5', 'Piter6', 'Mike7', 'John8', 'Piter9', 'Mike10', 'John11', 'Piter12'],
+	perPage: 5
 });
 prettyList.add('Nike13');
 
-var prettySortList = new PrettySortList({
+
+var prettySortList = new PrettyList({
 	selectorContainer : '.ui-prettysortlist-container',
-	items : ['Mike1', 'John2', 'Piter3', 'Andre4', 'Bob5', 'Poll6', 'Ray7', 'Loi8', 'Sam9', 'Cat10', 'Van11', 'Tom12']
+	items : ['Mike1', 'John2', 'Piter3', 'Andre4', 'Bob5', 'Poll6', 'Ray7', 'Loi8', 'Sam9', 'Cat10', 'Van11', 'Tom12'],
+	isSort: true,
+	perPage: 4
 });
-
-
 prettySortList.add('Nike13');
