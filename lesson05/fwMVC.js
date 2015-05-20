@@ -32,11 +32,11 @@
 	var EventAggregator = {
 		events: {},
 
-		trigger: function(event) {
+		trigger: function(event, data) {
 			var events = this.events;
 			if (typeof event === 'string' && events[event]) {
 				events[event].forEach(function(item, i, arr) {
-					if (item instanceof Function) item();
+					if (item instanceof Function) item(data);
 				});
 			}
 		},
@@ -88,11 +88,16 @@
 
 	var Model = function(options) {
 		this.__store = {};
-		mixin(defaultModelOptions, options);
+		mixin(this, defaultModelOptions, options);
+		this.__init();
 	}
 
 	Model.prototype = {
 		constructor: Model,
+
+		__init: function() {
+			(typeof this.init === 'function') && this.init();
+		},
 
 		get: function(name) {
 			var data = this.__store[name];
@@ -100,26 +105,34 @@
 		},
 
 		set: function(name, data) {
+			if (typeof this.validate === 'function' && !this.validate(data)) return;
 			this.__store[name] = data;
+			this.trigger('update', this.__store);
 		},
 
 		fetch: function() {
-			var xhr = new XMLHttpRequest();
-			xhr.open('GET', this.options.url, true);
+			var self = this,
+				xhr = new XMLHttpRequest();
+			xhr.open('GET', self.url, true);
 			xhr.onreadystatechange = function() {
 				if (xhr.readyState !== 4) return;
 
 				if (xhr.status === 200) {
-					this.__store = JSON.parse(xhr.responseText);
+					self.__store = JSON.parse(xhr.responseText);
+					self.trigger('update', self.__store);
 				} else {
 					console.error("Data not found");
 				}
 			}
 			xhr.send();
+		},
+
+		clear: function() {
+			this.__store = {};
 		}
 	}
 
-	extend(Model.prototype, EventAggregator);
+	mixin(Model.prototype, EventAggregator);
 
 	/**
 	 * Constructor
@@ -128,7 +141,33 @@
 	 */
 
 	var Controller = function(options) {
-		mixin(defaultModelOptions, options);
+		mixin(this, defaultControllerOptions, options);
+		this.__init();
+	}
+
+	Controller.prototype = {
+		constructor: Controller,
+
+		__init: function() {
+			this.__eventSubscribe();
+			(typeof this.init === 'function') && this.init();
+		},
+
+		__eventSubscribe: function() {
+			var events = this.events;
+			if (!(events instanceof Object)) return;
+			for (var key in events) {
+				if (!events.hasOwnProperty(key)) continue;
+				var elObj = this.events[key];
+				if (!(elObj instanceof Object)) continue;
+				for (var eKey in elObj) {
+					if (!elObj.hasOwnProperty(eKey) && typeof this[elObj[eKey]] !== 'function') continue;
+					var el = this.views[key] && this.views[key].el;
+					if (!el) continue;
+					el.addEventListener(eKey, this[elObj[eKey]]);
+				}
+			}
+		}
 	}
 
 	/**
@@ -138,8 +177,7 @@
 	 */
 
 	var View = function(options) {
-		mixin(defaultModelOptions, options);
-		(typeof this.init === 'function') && this.init();
+		mixin(this, defaultViewOptions, options);
 		this.__init();
 	}
 
@@ -148,10 +186,24 @@
 
 		__init: function() {
 			this.el = document.createElement(this.tagName);
-			this.el.setAttribute('id', this.id);
-			this.el.setAttribute('className', this.className);
-			this.el.innerHTML = this.html;
+			if (this.id) this.el.setAttribute('id', this.id);
+			if (this.className) this.el.setAttribute('class', this.className);
+			if (this.html) this.el.innerHTML = this.html;
+
+			if (this.attr) this.__addAttribute(this.el);
+
+			(typeof this.init === 'function') && this.init();
+		},
+
+		__addAttribute: function(el) {
+			var attr = this.attr;
+			if (!(attr instanceof Object)) return;
+			for (var key in attr) {
+				if (!attr.hasOwnProperty(key)) continue;
+				this.el.setAttribute(key, attr[key]);
+			}
 		}
+
 	}
 
 	MVC.Model = function(options) {
@@ -159,11 +211,11 @@
 	}
 
 	MVC.Controller = function(options) {
-		return new Model(options);
+		return new Controller(options);
 	}
 
 	MVC.View = function(options) {
-		return new Model(options);
+		return new View(options);
 	}
 
 })(window);

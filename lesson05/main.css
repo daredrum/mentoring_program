@@ -1,0 +1,47 @@
+body {
+	font: 20px "Helvetica Neue", Arial, Helvetica, sans-serif;
+}
+.h1 {
+	margin: 10px;
+	text-align: center;
+	font-size: 36px;
+	color: #666;
+}
+:focus {
+	outline: none;
+}
+.ui-container {
+	margin: 20px auto;
+	padding: 25px;
+	max-width: 900px;
+	min-width: 600px;
+	min-height: 100px;
+	background-color: #eee;
+}
+.ui-input {
+	width: 200px;
+	height: 30px;
+	border: 2px solid #999;
+	border-radius: 3px;
+	outline: none;
+}
+.ui-submit {
+	margin-left: 20px;
+	height: 36px;
+	border: 2px solid #999;
+	border-radius: 3px;
+	outline: none;
+	background-color: aquamarine;
+	cursor: pointer;
+	font-weight: bold;
+	color: #666;
+}
+.ui-panel {
+	margin-top: 20px;
+	width: 265px;
+	height: 36px;
+	line-height: 36px;
+	padding: 0 10px;
+	border-radius: 3px;
+	background-color: rgb(255, 250, 147);
+}
